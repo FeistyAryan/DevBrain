@@ -5,6 +5,10 @@ Django settings for DevBrain backend.
 from pathlib import Path
 import os
 from datetime import timedelta
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Build paths
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -106,7 +110,7 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10MB
 
 # Gemini API
-GEMINI_API_KEY = 'AIzaSyA1A88qqOw8pIzJdr04ubhe1AF2FrJbuEo'  
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', 'your-gemini-api-key-here')
 GEMINI_MODEL = 'gemini-2.5-flash'
 
 # Knowledge base settings

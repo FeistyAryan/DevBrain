@@ -210,6 +210,14 @@
     place-items: center;
     font-weight: 700;
     font-size: 0.85rem;
+    color: white;
+}
+
+.avatar-img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
 }
 
 .profile-name {

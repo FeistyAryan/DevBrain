@@ -46,15 +46,21 @@ const ChatPanel = () => {
         setIsTyping(true);
 
         try {
+            console.log('💬 Sending message to node:', selectedNodeId);
+            
             // Use the new backend-integrated chat system
             const result = await addChatMessage(selectedNodeId, userInput, true);
+            
+            console.log('✅ Got AI response:', result);
+            console.log('📝 AI message:', result?.ai_response);
+            console.log('💬 Message text:', result?.ai_response?.message);
             
             // Show knowledge sources if available
             if (result?.metadata?.knowledge_sources?.length > 0) {
                 console.log('📚 Knowledge sources used:', result.metadata.knowledge_sources);
             }
         } catch (error) {
-            console.error("Chat Error:", error);
+            console.error("❌ Chat Error:", error);
             // Fallback message is handled by the store
         } finally {
             setIsTyping(false);

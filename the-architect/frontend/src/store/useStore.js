@@ -285,9 +285,11 @@ const useStore = create((set, get) => ({
         }));
 
         // Get AI response
-        if (state.isConnected) {
+        if (state.isConnected && !nodeId.startsWith('local-')) {
             try {
                 const result = await api.chatWithAI(nodeId, message, useKnowledge);
+                
+                console.log('🔵 Backend AI response received:', result.ai_response);
                 
                 set((state) => ({
                     chatHistory: {
@@ -298,38 +300,66 @@ const useStore = create((set, get) => ({
                         ],
                     },
                 }));
+                
+                console.log('🟢 Chat history updated for node:', nodeId);
 
                 return result;
             } catch (error) {
-                console.warn('Failed to get AI response, using fallback:', error);
+                console.warn('Failed to get AI response from backend, using fallback:', error);
                 set({ error: error.message });
+                // Continue to fallback below
             }
         }
 
         // Fallback to local AI service
-        const { generateAIResponse } = await import('../services/ai');
-        const node = state.nodes.find(n => n.id === nodeId);
-        const aiResponse = await generateAIResponse(message, node?.label || 'Unknown');
-        
-        const aiMessage = {
-            id: `msg-${Date.now()}-ai`,
-            message: aiResponse.message,
-            role: 'ai',
-            timestamp: new Date().toISOString(),
-            source: aiResponse.source,
-        };
+        try {
+            const { generateAIResponse } = await import('../services/ai');
+            const node = state.nodes.find(n => n.id === nodeId);
+            const aiResponse = await generateAIResponse(message, node?.label || 'Unknown');
+            
+            const aiMessage = {
+                id: `msg-${Date.now()}-ai`,
+                message: aiResponse.message,
+                role: 'ai',
+                timestamp: new Date().toISOString(),
+                source: aiResponse.source,
+            };
 
-        set((state) => ({
-            chatHistory: {
-                ...state.chatHistory,
-                [nodeId]: [
-                    ...(state.chatHistory[nodeId] || []),
-                    aiMessage,
-                ],
-            },
-        }));
+            set((state) => ({
+                chatHistory: {
+                    ...state.chatHistory,
+                    [nodeId]: [
+                        ...(state.chatHistory[nodeId] || []),
+                        aiMessage,
+                    ],
+                },
+            }));
 
-        return { ai_response: aiMessage };
+            return { ai_response: aiMessage };
+        } catch (error) {
+            console.error('Failed to get AI response:', error);
+            
+            // Last resort: Add error message
+            const errorMessage = {
+                id: `msg-${Date.now()}-error`,
+                message: "Sorry, I'm having trouble responding right now. Please try again.",
+                role: 'ai',
+                timestamp: new Date().toISOString(),
+                source: 'error',
+            };
+
+            set((state) => ({
+                chatHistory: {
+                    ...state.chatHistory,
+                    [nodeId]: [
+                        ...(state.chatHistory[nodeId] || []),
+                        errorMessage,
+                    ],
+                },
+            }));
+
+            return { ai_response: errorMessage };
+        }
     },
 
     // Knowledge base management
@@ -364,6 +394,25 @@ const useStore = create((set, get) => ({
     // Clear current project (useful for starting fresh)
     clearProject: () => {
         localStorage.removeItem('devbrain_project_id');
+        set({
+            projectId: null,
+            projectName: 'DevBrain Project',
+            nodes: [],
+            edges: [],
+            chatHistory: {},
+            selectedNodeId: null,
+        });
+    },
+
+    // Clear all user data on logout
+    clearUserData: () => {
+        // Clear all localStorage keys related to devbrain
+        Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('devbrain_project_id_')) {
+                localStorage.removeItem(key);
+            }
+        });
+        
         set({
             projectId: null,
             projectName: 'DevBrain Project',

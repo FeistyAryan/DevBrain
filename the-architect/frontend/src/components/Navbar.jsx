@@ -12,13 +12,17 @@ import {
     ListChecks,
     Sparkles,
     LogOut,
+    User,
 } from 'lucide-react';
 import useStore from '../store/useStore';
+import { useAuth } from '../contexts/AuthContext';
+import { logout } from '../config/firebase';
 import CreateNodeModal from './CreateNodeModal';
 import '../styles/Navbar.css';
 
 const Navbar = () => {
-    const { currentView, setView } = useStore();
+    const { currentView, setView, clearUserData } = useStore();
+    const { user } = useAuth();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [theme, setTheme] = useState('dark');
     const [menuOpen, setMenuOpen] = useState(false);
@@ -46,13 +50,28 @@ const Navbar = () => {
         });
     };
 
+    const handleLogout = async () => {
+        try {
+            await logout();
+            clearUserData();
+            setMenuOpen(false);
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+    };
+
+    // Get user display info
+    const userDisplayName = user?.displayName || user?.email?.split('@')[0] || 'User';
+    const userInitial = userDisplayName.charAt(0).toUpperCase();
+    const userPhotoURL = user?.photoURL;
+
     return (
         <>
             <nav className="navbar glass-card">
                 <div className="navbar-left">
                     <div className="logo">
-                        <div className="logo-icon">🏗️</div>
-                        <h1 className="logo-text text-gradient">DevMind</h1>
+                        <div className="logo-icon">🧠</div>
+                        <h1 className="logo-text text-gradient">DevBrain</h1>
                     </div>
                 </div>
 
@@ -113,22 +132,38 @@ const Navbar = () => {
                             onClick={() => setMenuOpen((open) => !open)}
                             aria-expanded={menuOpen}
                         >
-                            <div className="avatar">D</div>
-                            <span className="profile-name">DevMind</span>
+                            {userPhotoURL ? (
+                                <img src={userPhotoURL} alt={userDisplayName} className="avatar-img" />
+                            ) : (
+                                <div className="avatar">{userInitial}</div>
+                            )}
+                            <span className="profile-name">{userDisplayName}</span>
                             <ChevronDown size={14} />
                         </button>
 
                         {menuOpen && (
                             <div className="profile-menu glass-card">
                                 <div className="profile-menu__header">
-                                    <div className="avatar">D</div>
+                                    {userPhotoURL ? (
+                                        <img src={userPhotoURL} alt={userDisplayName} className="avatar-img" />
+                                    ) : (
+                                        <div className="avatar">{userInitial}</div>
+                                    )}
                                     <div>
-                                        <div className="profile-menu__title">DevMind</div>
-                                        <div className="profile-menu__subtitle">Premium workspace</div>
+                                        <div className="profile-menu__title">{userDisplayName}</div>
+                                        <div className="profile-menu__subtitle">{user?.email}</div>
                                     </div>
                                 </div>
 
                                 <div className="profile-menu__section">
+                                    <button className="profile-menu__item">
+                                        <span className="profile-menu__icon"><User size={16} /></span>
+                                        <div className="profile-menu__text">
+                                            <div className="profile-menu__label">Profile</div>
+                                            <div className="profile-menu__hint">View your account</div>
+                                        </div>
+                                    </button>
+
                                     <button className="profile-menu__item">
                                         <span className="profile-menu__icon"><Keyboard size={16} /></span>
                                         <div className="profile-menu__text">
@@ -158,7 +193,7 @@ const Navbar = () => {
                                 </div>
 
                                 <div className="profile-menu__section muted">
-                                    <button className="profile-menu__item">
+                                    <button className="profile-menu__item" onClick={handleLogout}>
                                         <span className="profile-menu__icon"><LogOut size={16} /></span>
                                         <div className="profile-menu__text">
                                             <div className="profile-menu__label">Sign out</div>
